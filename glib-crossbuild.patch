@@ -1,0 +1,223 @@
+diff -Naur glib-1.2.10.orig/ltconfig glib-1.2.10/ltconfig
+--- glib-1.2.10.orig/ltconfig	Thu Feb  3 03:53:22 2000
++++ glib-1.2.10/ltconfig	Mon Jul 14 11:50:53 2003
+@@ -1970,15 +1970,7 @@
+   file_magic_cmd=/usr/bin/file
+   file_magic_test_file=`echo /lib/libc.so* /lib/libc-*.so`
+ 
+-  if test -f /lib/ld.so.1; then
+-    dynamic_linker='GNU ld.so'
+-  else
+-    # Only the GNU ld.so supports shared libraries on MkLinux.
+-    case "$host_cpu" in
+-    powerpc*) dynamic_linker=no ;;
+-    *) dynamic_linker='Linux ld.so' ;;
+-    esac
+-  fi
++  dynamic_linker='GNU ld.so'
+   ;;
+ 
+ netbsd*)
+--- glib-1.2.10/gstrfuncs.c.orig	Tue Feb 27 07:00:22 2001
++++ glib-1.2.10/gstrfuncs.c	Tue May  3 20:17:21 2005
+@@ -867,8 +867,8 @@ g_printf_string_upper_bound (const gchar
+                   /* beware of positional parameters
+                    */
+                 case '$':
+-                  g_warning (G_GNUC_PRETTY_FUNCTION
+-                             "(): unable to handle positional parameters (%%n$)");
++                  g_warning ("%s(): unable to handle positional parameters (%%n$)",
++							 G_GNUC_PRETTY_FUNCTION);
+                   len += 1024; /* try adding some safety padding */
+                   break;
+ 
+@@ -1034,8 +1034,8 @@ g_printf_string_upper_bound (const gchar
+                   /*          n   .   dddddddddddddddddddddddd   E   +-  eeee */
+                   conv_len += 1 + 1 + MAX (24, spec.precision) + 1 + 1 + 4;
+                   if (spec.mod_extra_long)
+-                    g_warning (G_GNUC_PRETTY_FUNCTION
+-                               "(): unable to handle long double, collecting double only");
++                    g_warning ("%s(): unable to handle long double, collecting double only",
++							   G_GNUC_PRETTY_FUNCTION);
+ #ifdef HAVE_LONG_DOUBLE
+ #error need to implement special handling for long double
+ #endif
+@@ -1077,8 +1077,8 @@ g_printf_string_upper_bound (const gchar
+                   conv_done = TRUE;
+                   if (spec.mod_long)
+                     {
+-                      g_warning (G_GNUC_PRETTY_FUNCTION
+-                                 "(): unable to handle wide char strings");
++                      g_warning ("%s(): unable to handle wide char strings",
++								 G_GNUC_PRETTY_FUNCTION);
+                       len += 1024; /* try adding some safety padding */
+                     }
+                   break;
+@@ -1108,9 +1108,8 @@ g_printf_string_upper_bound (const gchar
+                   conv_len += format - spec_start;
+                   break;
+                 default:
+-                  g_warning (G_GNUC_PRETTY_FUNCTION
+-                             "(): unable to handle `%c' while parsing format",
+-                             c);
++                  g_warning ("%s(): unable to handle `%c' while parsing format",
++                             G_GNUC_PRETTY_FUNCTION, c);
+                   break;
+                 }
+               conv_done |= conv_len > 0;
+--- glib-1.2.10/configure.orig	2001-03-15 16:44:01.000000000 +0100
++++ glib-1.2.10/configure	2005-07-19 09:38:22.642868000 +0200
+@@ -2098,34 +2098,29 @@ echo $ac_n "checking for extra flags to 
+ echo "configure:2099: checking for extra flags to get ANSI library prototypes" >&5
+ glib_save_LIBS=$LIBS
+ LIBS="$LIBS -lm"
+-if test "$cross_compiling" = yes; then
+-    { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
+-else
+-  cat > conftest.$ac_ext <<EOF
+-#line 2106 "configure"
++cat > conftest.$ac_ext <<EOF
++#line 2103 "configure"
+ #include "confdefs.h"
+ #include <math.h>
+              int main (void) { return (log(1) != log(1.)); }
++int main() {
++echo "$ac_t""none needed" 1>&6
++; return 0; }
+ EOF
+-if { (eval echo configure:2111: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+-then
+-  echo "$ac_t""none needed" 1>&6
+-else
+-  echo "configure: failed program was:" >&5
+-  cat conftest.$ac_ext >&5
+-  rm -fr conftest*
++if { (eval echo configure:2111: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
++  rm -rf conftest*
+   glib_save_CFLAGS=$CFLAGS
+      CFLAGS="$CFLAGS -std1"
+      if test "$cross_compiling" = yes; then
+     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 2124 "configure"
++#line 2119 "configure"
+ #include "confdefs.h"
+ #include <math.h>
+                  int main (void) { return (log(1) != log(1.)); }
+ EOF
+-if { (eval echo configure:2129: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
++if { (eval echo configure:2124: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+ then
+   echo "$ac_t""-std1" 1>&6
+ else
+@@ -2141,10 +2136,11 @@ rm -fr conftest*
+ fi
+ 
+ 
++else
++  echo "configure: failed program was:" >&5
++  cat conftest.$ac_ext >&5
+ fi
+-rm -fr conftest*
+-fi
+-
++rm -f conftest*
+ LIBS=$glib_save_LIBS
+ 
+ echo $ac_n "checking for extra flags for POSIX compliance""... $ac_c" 1>&6
+@@ -5383,6 +5379,17 @@ fi
+ rm -f conftest*
+ 		echo $ac_n "checking whether pthread_mutex_trylock is posix like""... $ac_c" 1>&6
+ echo "configure:5386: checking whether pthread_mutex_trylock is posix like" >&5
++if eval "test \"`echo '$''{'glib_cv_pthread_mutex_trylock_posixlike'+set}'`\" = set"; then
++  echo $ac_n "(cached) $ac_c" 1>&6
++        if test "x$glib_cv_pthread_mutex_trylock_posixlike" = "xyes"; then
++			cat >> confdefs.h <<\EOF
++#define HAVE_PTHREAD_MUTEX_TRYLOCK_POSIX 1
++EOF
++            echo "$ac_t""yes" 1>&6
++        else
++            echo "$ac_t""no" 1>&6
++        fi
++else
+ 		# DCE Threads return 1 as success, posix 0. what a mess.
+ 		if test "$cross_compiling" = yes; then
+     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
+@@ -5410,9 +5417,21 @@ EOF
+ fi
+ rm -fr conftest*
+ fi
++fi
+ 
+ 		echo $ac_n "checking whether pthread_cond_timedwait is posix like""... $ac_c" 1>&6
+ echo "configure:5416: checking whether pthread_cond_timedwait is posix like" >&5
++if eval "test \"`echo '$''{'glib_cv_pthread_cond_timedwait_posixlike'+set}'`\" = set"; then
++  echo $ac_n "(cached) $ac_c" 1>&6
++        if test "x$glib_cv_pthread_cond_timedwait_posixlike" = "xyes"; then
++			cat >> confdefs.h <<\EOF
++#define HAVE_PTHREAD_COND_TIMEDWAIT_POSIX 1
++EOF
++            echo "$ac_t""yes" 1>&6
++        else
++            echo "$ac_t""no" 1>&6
++        fi
++else
+ 		# DCE Threads return -1 as failure, posix ETIMEDOUT.
+ 		if test "$cross_compiling" = yes; then
+     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
+@@ -5452,6 +5471,8 @@ fi
+ 	LIBS="$glib_save_LIBS"
+ 	CFLAGS="$glib_save_CFLAGS"
+ fi
++fi
++echo "$ac_t""$glib_cv_rtldglobal_broken" 1>&6
+ 
+ if test "x$enable_threads" = "xyes"; then
+ 	if test "$ac_cv_func_getpwuid_r" != "yes"; then
+@@ -5576,7 +5597,7 @@ else
+   glib_nl='\n'
+ fi
+ echo $ac_n "checking system definitions for $glib_sysdef_msg""... $ac_c" 1>&6
+-echo "configure:5580: checking system definitions for $glib_sysdef_msg" >&5
++echo "configure:5575: checking system definitions for $glib_sysdef_msg" >&5
+ cat >confrun.c <<_______EOF
+ #include <stdio.h>
+ #include <sys/types.h>
+@@ -5600,14 +5621,24 @@ for glib_sysdef_input in POLLIN:1 POLLOU
+ done
+ echo "return 0; }" >>confrun.c
+ if test "$cross_compiling" = yes; then
+-    { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
++        for glib_sysdef_input in POLLIN:1 POLLOUT:4 POLLPRI:2 POLLERR:8 POLLHUP:16 POLLNVAL:32 ; do
++	       glib_sysdef=`echo $glib_sysdef_input | sed 's/^\([^:]*\):.*$/\1/'`
++	       glib_default=`echo $glib_sysdef_input | sed 's/^[^:]*:\(.*\)$/\1/'`
++	       if test $glib_sysdef != $glib_default; then
++		       glib_default=" =$glib_default"
++	       else
++		       glib_default=
++	       fi
++	       echo "#define GLIB_SYSDEF_$glib_sysdef$glib_default" >>$glib_sysdefso
++	done
++	echo "$ac_t""failed" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 5607 "configure"
++#line 5612 "configure"
+ #include "confdefs.h"
+ `cat confrun.c`
+ EOF
+-if { (eval echo configure:5611: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
++if { (eval echo configure:5616: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+ then
+   echo "$ac_t""done" 1>&6
+ else
+@@ -5624,7 +5655,7 @@ else
+ 		fi
+ 		echo "#define GLIB_SYSDEF_$glib_sysdef$glib_default" >>$glib_sysdefso
+ 	done
+-	echo "$ac_t""failed" 1>&6
++       echo "$ac_t""failed" 1>&6
+ fi
+ rm -fr conftest*
+ fi
